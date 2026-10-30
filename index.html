@@ -1,0 +1,2953 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NSE Pulse — Stock Market Dashboard</title>
+
+<style>
+:root {
+    color-scheme: dark;
+    
+    /* Core Brand & Accents */
+    --blue: #3478F6;                  /* Electric Blue */
+    --cyan: #50D5FF;                  /* Signal Cyan */
+    --focus-outline: #76A7FF;
+    
+    /* Dark Theme (Default Canvas & Surfaces) */
+    --bg: #0b0d12;
+    --surface: #101116;               /* Main Surface / Header / Navigation */
+    --panel: #171A23;                 /* Raised Card / Panel */
+    --panel2: #1D212C;                /* Elevated Control Background */
+    --hover: #222631;                 /* Hovered Stock Row */
+    --border: #343947;                /* Border */
+    --table-separator: #292D38;
+    --text: #F4F6FC;                  /* Primary Text */
+    --muted: #A0A6B5;                 /* Secondary Text */
+    --disabled: #626776;              /* Disabled Text */
+    
+    /* Market Directions (Dark) */
+    --green: #30D158;                 /* Positive Movement */
+    --red: #FF6259;                   /* Negative Movement */
+    --gold: #FFB547;                  /* Warning condition */
+    
+    /* Filter Controls */
+    --selected-filter: #1D3155;
+    --selected-filter-text: #8BB4FF;
+    --input-bg: #11141B;
+    --input-border: #343947;
+}
+
+[data-theme="light"] {
+    color-scheme: light;
+    
+    /* Apple macOS Multi-Layer Light Mode Surface Hierarchy */
+    --bg: #e4e9f0;                /* Cold Porcelain Canvas (Outer Window Base) */
+    --surface: #DDE3EA;               /* Cool Slate Sidebar & Header Bar Surface */
+    --panel: #FFFFFF;                 /* Crisp White Content Cards & Table Panels */
+    --panel2: #D3DCE6;                /* Soft Slate Interactive Control Fill */
+    --hover: #EBF1F8;                 /* Soft Ice-Blue Row Hover Tint */
+    --border: #C8D1DC;                /* Defined Structural Separator */
+    --table-separator: #E0E6EE;       /* Faint Interior Table Gridline */
+    --text: #111621;                  /* Deep Charcoal Primary Text */
+    --muted: #576375;                 /* Medium Slate Label Text */
+    --disabled: #8C97A8;              /* Faded Disabled Text */
+    
+    /* Market Directions (Apple Light Mode High Contrast) */
+    --green: #127A43;                 /* Deep Emerald Green for Positive Numbers */
+    --red: #C62828;                   /* Deep Crimson Red for Negative Numbers */
+    --gold: #955500;                  /* Amber Warning Tone */
+    
+    /* Accent & Filter Controls (Cobalt Blue System Tint) */
+    --blue: #245EDB;                  /* Apple Cobalt Blue Primary Accent */
+    --focus-outline: #245EDB;
+    --selected-filter: #D9E4FF;       /* Soft Blue Tinted Filter Fill */
+    --selected-filter-text: #1545B2;  /* High-Contrast Cobalt Filter Text */
+    --input-bg: #F4F7FB;              /* Light Tinted Search/Input Background */
+    --input-border: #BEC7D5;          /* Crisp Input Border */
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    letter-spacing: -0.011em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+button, input { font: inherit; }
+
+button { cursor: pointer; }
+
+.app {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: minmax(0, 245px) minmax(0, 1fr);
+}
+
+.sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 25px 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: clip;
+}
+.window-controls {
+    display: flex;
+    gap: 8px;
+    padding: 2px 4px 6px 4px;
+}
+
+.window-controls span {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.dot-close { background: #ff5f56; border: 1px solid #e0443e; }
+.dot-minimize { background: #ffbd2e; border: 1px solid #dea123; }
+.dot-maximize { background: #27c93f; border: 1px solid #1aab29; }
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 0 10px;
+}
+
+.brand-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(145deg, #2e79ee, #34d6a0);
+    color: #06101b;
+    font-size: 23px;
+    font-weight: 900;
+}
+
+.brand-name {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: .3px;
+}
+
+.brand-sub {
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 3px;
+}
+
+.nav-label {
+    padding: 0 12px;
+    margin-bottom: 9px;
+    color: #728099;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+}
+
+.nav {
+    display: grid;
+    gap: 7px;
+}
+
+.nav-button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 8px 11px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 500;
+    text-align: left;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.nav-button:hover {
+    background: var(--hover);
+    color: var(--text);
+}
+
+.nav-button.active {
+    background: var(--selected-filter);
+    border-color: transparent;
+    color: var(--selected-filter-text);
+    font-weight: 600;
+}
+
+.nav-icon {
+    width: 25px;
+    text-align: center;
+    font-size: 17px;
+}
+
+.nav-button.active .nav-icon { color: var(--blue); }
+
+.sidebar-bottom {
+    margin-top: auto;
+    padding: 14px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    border-radius: 12px;
+}
+
+.sidebar-bottom {
+    margin-top: auto;
+    padding: 14px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    border-radius: 12px;
+}
+
+/* ➔ PASTE THE THEME SELECTOR CSS RIGHT HERE: */
+/* DELETE THIS OLD BLOCK */
+/* PASTE THIS NEW BLOCK HERE */
+body, .app, .sidebar, .main, .stat-card, .table-panel, .refresh-button, .market-pill, .search, .theme-selector, .theme-btn, th, td {
+    transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                color 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+.theme-toggle-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--text);
+    outline: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.12s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.theme-toggle-btn:hover {
+    background: var(--hover);
+}
+
+.theme-toggle-btn:active {
+    transform: scale(0.92);
+}
+
+/* Default Dark Mode: Show Sun, Hide Moon */
+.sun-icon { display: block; }
+.moon-icon { display: none; }
+
+/* Light Mode: Show Moon, Hide Sun */
+[data-theme="light"] .sun-icon { display: none; }
+[data-theme="light"] .moon-icon { display: block; 
+
+}
+.source-label {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.source-value {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    font-weight: 700;
+}
+
+.dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--green);
+}
+
+.dot.waiting { background: var(--gold); }
+.dot.error { background: var(--red); }
+
+.main {
+    position: relative;
+    min-width: 0;
+    padding: 32px 36px 40px;
+    background: var(--bg);
+    overflow: hidden;
+}
+
+/* Apple-style background gradient aura glow */
+.main::before {
+    content: "";
+    position: absolute;
+    top: -40px;
+    left: 10%;
+    width: 600px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(52, 120, 246, 0.07) 0%, rgba(80, 213, 255, 0) 75%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 28px;
+}
+
+.eyebrow {
+    color: var(--blue);
+    text-transform: uppercase;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    margin-bottom: 6px;
+}
+
+h1 {
+    font-size: clamp(28px, 3.5vw, 38px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin: 0;
+    background: linear-gradient(135deg, var(--text) 40%, var(--blue) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 6px;
+    line-height: 1.4;
+    letter-spacing: -0.005em;
+}
+
+.top-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.market-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    white-space: nowrap;
+    color: #c4cfdf;
+    font-size: 12px;
+}
+
+.refresh-button {
+    background: var(--blue);
+    color: white;
+    border: 0;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: opacity 0.2s ease, transform 0.1s ease;
+}
+
+.refresh-button:hover { opacity: 0.9; }
+.refresh-button:active { transform: scale(0.97); }
+.refresh-button:disabled { opacity: .5; cursor: wait; }
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 15px;
+    margin-bottom: 23px;
+}
+
+.stat-card {
+    background: rgba(23, 26, 35, 0.75);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    padding: 12px 15px;
+    width: 100%;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--blue);
+    box-shadow: 0 14px 35px rgba(52, 120, 246, 0.1);
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--blue);
+    box-shadow: 0 8px 20px rgba(36, 94, 219, 0.12);
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.5);
+}
+
+.stat-label {
+    color: var(--muted);
+    font-size: 9.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stat-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    margin: 8px 0 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stat-note {
+    color: #8c9ab0;
+    font-size: 9.5px;
+    line-height: 1.5;
+}
+
+.accent-green { color: var(--green); }
+.accent-red { color: var(--red); }
+.accent-blue { color: var(--blue); }
+.accent-gold { color: var(--gold); }
+
+.table-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.table-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    padding: 20px 21px;
+    border-bottom: 1px solid var(--border);
+}
+
+.table-heading h2 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.table-heading p {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.table-tools {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+.table-tools {
+    flex-wrap: wrap;
+}
+
+.market-cap-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel); /* Unifies color with the panel */
+}
+
+.market-cap-label {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    margin-right: 4px;
+}
+
+.cap-btn {
+    padding: 7px 14px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--panel2);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cap-btn:hover {
+    color: var(--text);
+    border-color: var(--blue);
+}
+
+.cap-btn:hover {
+    border-color: var(--blue);
+}
+
+.cap-btn.active {
+    background: var(--selected-filter);
+    border-color: var(--blue);
+    color: var(--selected-filter-text);
+}
+
+.cap-btn[data-cap="large"].active {
+    border-color: #71a7ff;
+    color: #71a7ff;
+}
+
+.cap-btn[data-cap="mid"].active {
+    border-color: #f4c66a;
+    color: #f4c66a;
+}
+
+.cap-btn[data-cap="small"].active {
+    border-color: #25d695;
+    color: #25d695;
+}
+
+.volume-filters {
+    display: flex;
+    gap: 5px;
+}
+
+.filter-button {
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 20px; /* Apple pill shape */
+    color: var(--muted);
+    background: var(--panel);
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.filter-button:hover {
+    color: var(--text);
+    background: var(--panel2);
+    border-color: var(--blue);
+}
+
+.filter-button:hover {
+    color: var(--text);
+    background: var(--panel2);
+    border-color: var(--blue);
+}
+
+.filter-button.active {
+    color: var(--selected-filter-text);
+    background: var(--selected-filter);
+    border-color: var(--blue);
+}
+
+.filter-button[data-direction="bullish"].active {
+    color: var(--green);
+}
+
+.filter-button[data-direction="bearish"].active {
+    color: var(--red);
+}
+
+.smart-filter-wrap {
+    position: relative;
+}
+
+.smart-filter-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 100;
+    width: 235px;
+    padding: 14px;
+    background: var(--panel);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+}
+
+.smart-filter-heading {
+    margin: 5px 0 10px;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.smart-filter-option {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 0;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.smart-filter-option input {
+    accent-color: #71a7ff;
+}
+
+.smart-filter-directions {
+    display: flex;
+    gap: 7px;
+    margin-bottom: 12px;
+}
+
+.smart-filter-directions button {
+    flex: 1;
+}
+
+.smart-filter-directions [data-smart-direction="bullish"].active {
+    color: #25d695;
+    border-color: #25d695;
+}
+
+.smart-filter-directions [data-smart-direction="bearish"].active {
+    color: #ff6577;
+    border-color: #ff6577;
+}
+
+#smartFilterClear {
+    width: 100%;
+}
+
+.search {
+    width: 225px;
+    max-width: 100%;
+    color: var(--text);
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    outline: none;
+    transition: all 0.15s ease;
+}
+
+.search:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(52, 120, 246, 0.25);
+}
+
+.count-pill {
+    border: 1px solid var(--border);
+    background: #192438;
+    color: #b8c9e3;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    white-space: nowrap;
+    text-align: right;
+}
+
+th {
+    padding: 10px 16px;
+    background: var(--surface);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 10px;
+    font-weight: 700;
+    border-bottom: 1px solid var(--table-separator);
+}
+
+th:first-child, td:first-child { text-align: left; }
+
+td {
+    padding: 15px 17px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: rgba(255, 255, 255, 0.04); }
+
+
+.trend-notifier {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 220px;
+    margin: 0;
+    padding: 12px;
+    background: rgba(17, 24, 39, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+
+.sector-notifier {
+    position: static;
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 10px;
+    margin: 0;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: none;
+    overflow-wrap: anywhere;
+}
+.sector-notifier *,
+.sector-notifier *::before,
+.sector-notifier *::after {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+.sector-notifier h3 {
+    margin: 0 0 12px;
+    font-size: 13px;
+}
+
+.sector-group-title {
+    margin: 12px 0 7px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.sector-group-title.bullish {
+    color: #25d695;
+}
+
+.sector-group-title.bearish {
+    color: #ff6577;
+}
+
+.sector-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start; /* Aligns the percentage neatly to the top line */
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid #263247;
+    font-size: 11px;
+}
+
+.sector-item span:first-child {
+    flex: 1; /* Allows the long sector name to wrap cleanly */
+    overflow-wrap: anywhere;
+}
+
+.sector-item .bullish {
+    color: #25d695;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.sector-item .bearish {
+    color: #ff6577;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.sector-empty {
+    color: #8794aa;
+    font-size: 11px;
+    padding: 5px 0;
+}
+
+.trend-notifier button {
+    width: 100%;
+    min-width: 0;
+    padding: 13px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+
+.trend-bullish-btn {
+    color: #57e6ad;
+    background: rgba(37, 214, 149, 0.12);
+    border: 1px solid #25d695;
+}
+
+.trend-bearish-btn {
+    color: #ff8795;
+    background: rgba(255, 101, 119, 0.12);
+    border: 1px solid #ff6577;
+}
+
+tr.trend-jump-target td {
+    outline: 2px solid #f5c451;
+    outline-offset: -2px;
+}
+
+/* Consistent price movement in Relative Moves */
+tbody tr.consistent-bullish td {
+    background: rgba(37, 214, 149, 0.10);
+}
+
+tbody tr.consistent-bearish td {
+    background: rgba(255, 101, 119, 0.10);
+}
+
+tbody tr.consistent-bullish td:first-child {
+    box-shadow: inset 3px 0 var(--green);
+}
+
+tbody tr.consistent-bearish td:first-child {
+    box-shadow: inset 3px 0 var(--red);
+}
+.company {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text);
+}
+
+.symbol {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+    margin-top: 2px;
+}
+
+.change {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+}
+
+.change.positive {
+    color: var(--green);
+    background: rgba(48, 209, 88, 0.12);
+}
+
+.change.negative {
+    color: var(--red);
+    background: rgba(255, 69, 58, 0.12);
+}
+
+.empty-state {
+    text-align: center !important;
+    padding: 48px 20px !important;
+    color: var(--muted);
+    font-size: 13px;
+    white-space: normal;
+    line-height: 1.6;
+    letter-spacing: -0.01em;
+}
+
+.table-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 13px 20px;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.footer-note {
+    margin-top: 17px;
+    color: #77859b;
+    font-size: 11px;
+    line-height: 1.7;
+}
+
+#toast {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    max-width: calc(100vw - 44px);
+    padding: 13px 17px;
+    background: rgba(32, 44, 64, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+    display: none;
+    z-index: 10;
+}
+.secret-toolbar {
+    display: none;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px 20px;
+    background: var(--panel); /* Unifies color seamlessly */
+    border-bottom: 1px solid var(--border);
+}
+
+.secret-control-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+}
+
+.secret-control-label {
+    width: 100%;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+}
+
+.secret-signal-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 15px;
+}
+
+.secret-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #c8d4e7;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.secret-check input {
+    accent-color: var(--blue);
+}
+
+.secret-note {
+    width: 100%;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+.secret-toolbar .filter-button.active[data-secret-direction="gainers"] {
+    color: var(--green);
+    border-color: var(--green);
+}
+
+.secret-toolbar .filter-button.active[data-secret-direction="losers"] {
+    color: var(--red);
+    border-color: var(--red);
+}
+.sector-strip {
+    display: none;
+    flex-wrap: wrap;
+    gap: 4px 22px;
+    padding: 7px 20px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+}
+.sector-strip .up { color: var(--green); }
+.sector-strip .down { color: var(--red); }
+.alltf-wrap { position: relative; display: inline-block; }
+.alltf-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 100;
+    width: 200px;
+    padding: 12px 14px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+}
+.alltf-heading {
+    margin-bottom: 6px;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+.alltf-option {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 0;
+    color: var(--text);
+    font-size: 12px;
+    cursor: pointer;
+}
+.alltf-option input { accent-color: var(--blue); }
+.alltf-note {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 11px;
+}
+@media (max-width: 1100px) {
+    .app { grid-template-columns: 210px minmax(0, 1fr); }
+    .main { padding: 23px 20px; }
+    .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stat-value { font-size: 24px; }
+}
+
+@media (max-width: 760px) {
+    .app { display: block; }
+    .sidebar {
+        padding: 13px;
+        gap: 15px;
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+    }
+    .brand { padding: 0 3px; }
+    .nav-label, .sidebar-bottom { display: none; }
+    .nav {
+        display: flex;
+        gap: 7px;
+        overflow-x: auto;
+        padding-bottom: 3px;
+    }
+    .nav-button {
+        width: auto;
+        flex: 0 0 auto;
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+    .nav-icon { width: auto; }
+    .main { padding: 22px 13px; }
+    .topbar { align-items: flex-start; flex-direction: column; }
+    .top-actions { width: 100%; flex-wrap: wrap; }
+    .market-pill { flex: 1; }
+    .stats { gap: 9px; }
+    .stat-card { padding: 14px; }
+    .stat-value { font-size: 22px; }
+    .table-heading { align-items: flex-start; flex-direction: column; padding: 16px; }
+    .table-tools { width: 100%; }
+    .search { width: 100%; }
+    .table-footer { padding: 12px 15px; }
+}
+
+@media (max-width: 380px) {
+    .stats { grid-template-columns: 1fr 1fr; }
+    .stat-value { font-size: 19px; }
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+<aside class="sidebar">
+        <div class="window-controls">
+            <span class="dot-close"></span>
+            <span class="dot-minimize"></span>
+            <span class="dot-maximize"></span>
+        </div>
+        <div class="brand">
+            <div class="brand-icon">↗</div>
+            <div>
+                <div class="brand-name">NSE PULSE</div>
+                <div class="brand-sub">INDIAN EQUITY SCANNER</div>
+            </div>
+        </div>
+
+        <div>
+            <div class="nav-label">MARKET SCANNERS</div>
+            <nav class="nav" aria-label="Stock scanners">
+    <button class="nav-button active" data-view="price_gainers_losers">
+        <span class="nav-icon">↕</span>
+        Price Gainers / Losers
+    </button>
+
+    <button class="nav-button" data-view="volume_gainers">
+        <span class="nav-icon">▥</span>
+        Volume Gainers
+    </button>
+
+    <button class="nav-button" data-view="price_volume_gainers">
+        <span class="nav-icon">◈</span>
+        Price &amp; Volume Gainers
+    </button>
+    
+<button class="nav-button" data-view="relative_moves">
+    <span class="nav-icon">⇄</span>
+    Relative Moves
+</button>
+
+<button class="nav-button" data-view="secret_moves">
+    <span class="nav-icon">⌁</span>
+    Secret Gainers &amp; Losers
+</button>
+
+</nav>
+        </div>
+
+        
+        
+        <div id="sectorNotifier" class="sector-notifier">
+            <h3>SECTOR LEADERS</h3>
+
+            <div class="sector-group-title bullish">▲ TOP 4 BULLISH</div>
+            <div id="bullishSectorList">
+                <div class="sector-empty">Waiting for NSE data…</div>
+            </div>
+
+            <div class="sector-group-title bearish">▼ TOP 4 BEARISH</div>
+            <div id="bearishSectorList">
+                <div class="sector-empty">Waiting for NSE data…</div>
+            </div>
+        </div>
+
+<div class="sidebar-bottom">
+            <div class="source-label">MARKET DATA SOURCE</div>
+            <div class="source-value">
+                <span class="dot waiting" id="sourceDot"></span>
+                NSE India
+            </div>
+            <div class="source-label" style="margin-top:9px">
+                Public NSE endpoints
+            </div>
+
+
+        </div>
+
+    </aside>
+
+    <main class="main">
+        <header class="topbar">
+            <div>
+                <div class="eyebrow">MARKET INTELLIGENCE / NSE</div>
+                <h1 id="pageTitle">Price Gainers / Losers</h1>
+                <div class="subtitle" id="pageSubtitle">
+                    Stocks with high traded volume on NSE.
+                </div>
+            </div>
+
+<div class="top-actions">
+        <div class="market-pill">
+            <span class="dot waiting" id="marketDot"></span>
+            <span id="marketStatus">Connecting to NSE</span>
+        </div>
+
+        <!-- Floating Apple-style Icon Theme Selector -->
+<button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle Light/Dark Mode" aria-label="Toggle Theme">
+    <!-- Sun Icon (shown in dark mode) -->
+    <svg class="sun-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    <!-- Moon Icon (shown in light mode) -->
+    <svg class="moon-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+</button>
+
+        <button class="refresh-button" id="refreshButton">
+            ↻ Refresh
+        </button>
+    </div>
+        </header>
+
+        <section class="stats" aria-label="Market overview">
+            <div class="stat-card">
+                <div class="stat-label">Stocks in Current List</div>
+                <div class="stat-value accent-blue" id="statCount">—</div>
+                <div class="stat-note">Rows received from NSE</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Positive Change</div>
+                <div class="stat-value accent-green" id="statPositive">—</div>
+                <div class="stat-note">Stocks showing a gain</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Negative Change</div>
+                <div class="stat-value accent-red" id="statNegative">—</div>
+                <div class="stat-note">Stocks showing a loss</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Last Successful Update</div>
+                <div class="stat-value accent-gold" id="statUpdated"
+                     style="font-size:17px">Waiting…</div>
+                <div class="stat-note" id="statTradeDate">Awaiting NSE data</div>
+            </div>
+        </section>
+
+        <section class="table-panel">
+            <div class="table-heading">
+                <div>
+                    <h2 id="tableTitle">Volume Gainers</h2>
+                    <p id="tableDescription">
+                        Sorted as supplied by the NSE endpoint.
+                    </p>
+                </div>
+                <div class="table-tools">
+<div class="smart-filter-wrap">
+    <button class="filter-button" id="smartFilterToggle"
+            type="button" aria-expanded="false">
+        ⚙ Filters <span id="smartFilterCount">0 selected</span>
+    </button>
+
+    <div id="smartFilterPanel" class="smart-filter-panel"
+         style="display:none">
+        <div class="smart-filter-heading">SELECT CONDITIONS</div>
+
+        <label class="smart-filter-option">
+            <input type="checkbox" value="volume" class="smart-filter-check">
+            Relative Volume
+        </label>
+
+        <label class="smart-filter-option">
+            <input type="checkbox" value="price" class="smart-filter-check">
+            Relative Price
+        </label>
+
+        <label class="smart-filter-option">
+            <input type="checkbox" value="sector" class="smart-filter-check">
+            Sector Strength
+        </label>
+
+        <label class="smart-filter-option">
+            <input type="checkbox" value="sector_volume" class="smart-filter-check">
+            Sector Volume
+        </label>
+
+        <div class="smart-filter-heading">DIRECTION</div>
+
+        <div class="smart-filter-directions">
+            <button type="button" class="filter-button"
+                    data-smart-direction="bullish">Bullish</button>
+            <button type="button" class="filter-button"
+                    data-smart-direction="bearish">Bearish</button>
+        </div>
+
+        <button type="button" class="filter-button"
+                id="smartFilterClear">Clear Filters</button>
+    </div>
+</div>
+<div id="volumeFilters" class="volume-filters" style="display:none">
+    <button class="filter-button active" data-direction="all">All</button>
+    <button class="filter-button" data-direction="bullish">Bullish</button>
+    <button class="filter-button" data-direction="bearish">Bearish</button>
+    <button class="filter-button" data-direction="neutral">Neutral</button>
+</div>
+
+
+    <input class="search" id="searchInput" type="search"
+           placeholder="Search symbol or company…"
+           aria-label="Search stocks">
+
+    <span class="count-pill" id="rowCount">0 stocks</span>
+</div>
+            
+            </div>
+            <div id="sectorStrip" class="sector-strip"></div>
+            <div id="marketCapToolbar" class="market-cap-toolbar">
+                <span class="market-cap-label">MARKET CAP:</span>
+                <button class="cap-btn" data-cap="large"
+                        aria-pressed="false">Large Cap</button>
+                <button class="cap-btn" data-cap="mid"
+                        aria-pressed="false">Mid Cap</button>
+                <button class="cap-btn" data-cap="small"
+                        aria-pressed="false">Small Cap</button>
+            </div>
+<div id="secretToolbar" class="secret-toolbar">
+<div class="secret-control-group">
+    <div class="secret-control-label">TIMEFRAME</div>
+
+    <button type="button" class="filter-button active"
+            data-secret-timeframe="day">
+        Day
+    </button>
+
+
+<button type="button" class="filter-button"
+        data-secret-timeframe="1hr">
+    1 Hour
+</button>
+
+<button type="button" class="filter-button"
+        data-secret-timeframe="4hr">
+    4 Hours
+</button>
+
+
+    <button type="button" class="filter-button"
+            data-secret-timeframe="week">
+        Week
+    </button>
+
+    <button type="button" class="filter-button"
+            data-secret-timeframe="month">
+        Month
+    </button>
+    <span class="alltf-wrap">
+        <button type="button" class="filter-button" id="allTfBtn"
+                aria-pressed="false"
+                title="Show only stocks common to the timeframes you choose">
+            ⊞ All Timeframes
+        </button>
+
+        <div id="allTfPanel" class="alltf-panel" style="display:none">
+            <div class="alltf-heading">COMMON ACROSS</div>
+
+            <label class="alltf-option">
+                <input type="checkbox" class="alltf-check" value="day" checked> Day
+            </label>
+            <label class="alltf-option">
+                <input type="checkbox" class="alltf-check" value="1hr" checked> 1 Hour
+            </label>
+            <label class="alltf-option">
+                <input type="checkbox" class="alltf-check" value="4hr" checked> 4 Hours
+            </label>
+            <label class="alltf-option">
+                <input type="checkbox" class="alltf-check" value="week" checked> Week
+            </label>
+            <label class="alltf-option">
+                <input type="checkbox" class="alltf-check" value="month" checked> Month
+            </label>
+
+            <div class="alltf-note" id="allTfNote">Comparing…</div>
+            <button type="button" class="filter-button" id="allTfOff"
+                    style="width:100%;margin-top:8px">Turn off</button>
+        </div>
+    </span>
+</div>
+
+    <div class="secret-control-group">
+        <div class="secret-control-label">DIRECTION</div>
+        <button type="button" class="filter-button"
+                data-secret-direction="gainers">Gainers</button>
+        <button type="button" class="filter-button"
+                data-secret-direction="losers">Losers</button>
+        <button type="button" class="filter-button active"
+                data-secret-direction="both">Both</button>
+    </div>
+
+    <div class="secret-control-group">
+        <div class="secret-control-label">SIGNALS — CHECK ANY</div>
+        <div class="secret-signal-options">
+            <label class="secret-check">
+                <input type="checkbox" data-secret-signal="quiet_accumulation">
+                Quiet accumulation
+            </label>
+            <label class="secret-check">
+                <input type="checkbox" data-secret-signal="persistent_strength">
+                Persistent strength
+            </label>
+            <label class="secret-check">
+                <input type="checkbox" data-secret-signal="possible_distribution">
+                Possible distribution
+            </label>
+            <label class="secret-check">
+                <input type="checkbox" data-secret-signal="persistent_weakness">
+                Persistent weakness
+            </label>
+        </div>
+    </div>
+
+    <div class="secret-note">
+        Price/volume patterns are clues only; they cannot establish insider trading or operator activity.
+                <br>Green row = rising consistently · Red row = falling consistently (70%+ of periods in the selected timeframe).
+    </div>
+</div>
+            <div class="table-wrap">
+
+                <table>
+                    <thead>
+                        
+<tr id="stockHeaders">
+
+                            <th>Stock</th>
+                            <th>Last Price</th>
+                            <th>Change %</th>
+                            <th>Volume</th>
+                            <th>1W Avg. Volume</th>
+                            <th>Open</th>
+                            <th>High</th>
+                            <th>Low</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stockRows">
+                        <tr>
+                            <td colspan="8" class="empty-state">
+                                Connecting to the official NSE endpoints…
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-footer">
+                <span id="resultSummary">Waiting for market data…</span>
+                <span id="nextUpdate">Automatic refresh enabled</span>
+            </div>
+        </section>
+
+        <div class="footer-note">
+            Data source: NSE India public endpoints. Data may be delayed,
+            incomplete, or temporarily unavailable. Public endpoint polling
+            is not a tick-by-tick exchange feed. Price gainers and losers
+            reflect the list returned by NSE and may not cover every listed
+            equity. This dashboard is informational, not investment advice.
+        </div>
+    </main>
+</div>
+
+
+
+<div id="toast" role="status"></div>
+
+<script>
+"use strict";
+
+const VIEW_CONFIG = {
+    price_gainers_losers: {
+        title: "Price Gainers / Losers",
+        subtitle: "Rising and falling stocks together in one list.",
+        description: "NSE price gainers and losers, sorted by percentage change."
+    },
+    volume_gainers: {
+        title: "Volume Gainers",
+        subtitle: "Stocks with elevated trading volume, including rising and falling prices.",
+        description: "Filter the NSE volume-gainers list by price direction."
+    },
+    
+    price_volume_gainers: {
+        title: "Price & Volume Gainers",
+        subtitle: "Stocks rising in price with volume above the one-week average.",
+        description: "Positive price change and current volume above the reported one-week average."
+    },
+        relative_moves: {
+        title: "Relative Moves",
+        subtitle: "Stocks outperforming or underperforming their sector.",
+        description: "Stock percentage change minus sector-index percentage change."
+    },
+
+    secret_moves: {
+        title: "Secret Gainers & Losers",
+        subtitle: "Stocks showing persistent price movement across multiple sessions.",
+        description: "Historical price consistency and volume signals. These are clues, not proof of operator activity."
+    }
+};
+
+let activeView = "price_gainers_losers";
+let volumeDirection = "all";
+let smartFilterDirection = "";
+let smartFilters = new Set();
+let marketCapFilters = new Set();
+let latestData = null;
+let searchTerm = "";
+let lastRenderedKey = "";
+let toastTimer = null;
+let refreshInProgress = false;
+let secretRows = [];
+let secretTimeframe = "day";
+let secretDirection = "both";
+let secretSignals = new Set();
+let secretLastFetch = 0;
+let secretFetchInProgress = false;
+let secretRequestController = null;
+let secretRequestId = 0;
+let secretFetchError = "";
+let secretScanning = false;
+let secretPollTimer = null;
+const ALL_TF_LIST = ["day", "1hr", "4hr", "week", "month"];
+const ALL_TF_SAME_DIRECTION = true;
+let allTimeframes = false;
+let allTfSelected = new Set(ALL_TF_LIST);
+let commonSymbols = null;
+let allTfRequestId = 0;
+const SECRET_FETCH_INTERVAL = 20_000;
+const CONSISTENCY_MIN = 70;   // % of periods that must move the same way
+
+const $ = (id) => document.getElementById(id);
+
+function formatNumber(value, decimals = 2) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return "—";
+
+    return n.toLocaleString("en-IN", {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+    });
+}
+
+
+
+function formatInteger(value) {
+    if (value === null || value === undefined || value === "") {
+        return "—";
+    }
+
+    const n = Number(value);
+    if (!Number.isFinite(n)) return "—";
+
+    return Math.round(n).toLocaleString("en-IN");
+}
+
+
+function formatPercent(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return "—";
+    return `${Math.abs(n).toFixed(2)}%`;
+}
+const COMPANY_NAMES = {
+    "HCLTECH": "HCL Technologies",
+    "INFY": "Infosys",
+    "TCS": "Tata Consultancy Services",
+    "WIPRO": "Wipro",
+    "TECHM": "Tech Mahindra",
+    "LTIM": "LTIMindtree",
+    "COFORGE": "Coforge",
+    "PERSISTENT": "Persistent Systems",
+    "OFSS": "Oracle Financial Services Software",
+    "MPHASIS": "Mphasis",
+    "KPITTECH": "KPIT Technologies",
+    "TATAELXSI": "Tata Elxsi",
+    "BSOFT": "Birlasoft",
+    "CYIENT": "Cyient",
+    "ZENSARTECH": "Zensar Technologies",
+    "LTTS": "L&T Technology Services"
+};
+
+function getDisplayCompany(row) {
+    const symbol = String(row.symbol || "").trim().toUpperCase();
+    const company = String(row.company || "").trim();
+
+    if (company && company.toUpperCase() !== symbol) {
+        return company;
+    }
+
+    return COMPANY_NAMES[symbol] || symbol;
+}
+function safeText(value) {
+    return value === null || value === undefined || value === ""
+        ? "—"
+        : String(value);
+}
+
+function formatUpdated(isoString) {
+    if (!isoString) return "Waiting…";
+
+    const date = new Date(isoString);
+    if (Number.isNaN(date.getTime())) return "Available";
+
+    return date.toLocaleTimeString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true
+    });
+}
+
+function formatTradeDate(value) {
+    return value ? `Trade date: ${value}` : "Trade date unavailable";
+}
+
+function showToast(message) {
+    const toast = $("toast");
+    toast.textContent = message;
+    toast.style.display = "block";
+
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+        toast.style.display = "none";
+    }, 3500);
+}
+
+function isEtfRow(row) {
+    const symbol = String(row.symbol || "").trim().toUpperCase();
+    const company = String(row.company || "").trim().toUpperCase();
+
+    const blockedSymbols = [
+        "BEES", "ETF", "GOLDETF", "SILVERETF", "LIQUIDETF",
+        "BANKETF", "ITETF", "NIFTYETF", "JUNIORBEES",
+        "MON100", "CPSEETF", "SETFGOLD", "LIQUIDBEES"
+    ];
+
+    const blockedCompanyTerms = [
+        "EXCHANGE TRADED FUND",
+        "MUTUAL FUND",
+        "INDEX FUND",
+        "GOLD FUND",
+        "SILVER FUND"
+    ];
+
+    if (blockedSymbols.some(term => symbol.includes(term))) {
+        return true;
+    }
+
+    if (blockedCompanyTerms.some(term => company.includes(term))) {
+        return true;
+    }
+
+    return /\bETF\b/.test(company) || /\bBEES\b/.test(company);
+}
+
+
+function currentRows() {
+    if (activeView === "secret_moves") {
+        let rows = Array.isArray(secretRows) ? secretRows.slice() : [];
+
+
+        // Apply cap filters only to stocks with a known category.
+        if (marketCapFilters.size > 0) {
+            rows = rows.filter(row => {
+                const category = String(
+                    row.market_cap_category || ""
+                ).trim().toLowerCase();
+
+                return category !== "" &&
+                    marketCapFilters.has(category);
+            });
+        }
+
+
+        // Apply signal filters.
+// Apply selected signal filters.
+// Show a stock if it matches ANY selected signal.
+// Apply signal filters — diagnostic
+if (secretSignals.size > 0) {
+    console.log("Selected signals:", [...secretSignals]);
+    console.log("First stock signals:", rows[0]?.signals);
+    console.log("Stocks before signal filter:", rows.length);
+
+    rows = rows.filter(row =>
+        [...secretSignals].some(signal =>
+            row.signals?.[signal] === true
+        )
+    );
+
+    console.log("Stocks after signal filter:", rows.length);
+}
+
+        if (allTimeframes && commonSymbols) {
+            rows = rows.filter(row =>
+                commonSymbols.has(String(row.symbol || "").toUpperCase())
+            );
+        }
+
+        return rows.filter(row => !isEtfRow(row));
+    }
+
+    if (!latestData) return [];
+
+    let rows = [];
+
+    if (activeView === "price_gainers_losers") {
+        const gainers = Array.isArray(latestData.price_gainers)
+            ? latestData.price_gainers : [];
+        const losers = Array.isArray(latestData.price_losers)
+            ? latestData.price_losers : [];
+
+        rows = [...gainers, ...losers].sort(
+            (a, b) => Number(b.change) - Number(a.change)
+        );
+    } else if (activeView === "volume_gainers") {
+        rows = Array.isArray(latestData.volume_gainers)
+            ? latestData.volume_gainers : [];
+
+        if (volumeDirection === "bullish") {
+            rows = rows.filter(row => Number(row.change) > 0.3);
+        } else if (volumeDirection === "bearish") {
+            rows = rows.filter(row => Number(row.change) < -0.3);
+        } else if (volumeDirection === "neutral") {
+            rows = rows.filter(row => {
+                const change = Number(row.change);
+                return Number.isFinite(change) &&
+                    change >= -0.3 && change <= 0.3;
+            });
+        }
+    } else if (activeView === "relative_moves") {
+        rows = Array.isArray(latestData.relative_moves)
+            ? latestData.relative_moves : [];
+    } else if (activeView === "price_volume_gainers") {
+        rows = Array.isArray(latestData.price_volume_gainers)
+            ? latestData.price_volume_gainers : [];
+    }
+
+    rows = rows.filter(row => !isEtfRow(row));
+
+    if (marketCapFilters.size > 0) {
+        rows = rows.filter(row =>
+            marketCapFilters.has(
+                String(row.market_cap_category || "").toLowerCase()
+            )
+        );
+    }
+
+    if (smartFilters.has("volume")) {
+        rows = rows.filter(row => {
+            const volume = Number(row.volume);
+            const average = Number(row.average_volume);
+            return Number.isFinite(volume) &&
+                Number.isFinite(average) &&
+                average > 0 && volume > average;
+        });
+    }
+
+    if (smartFilters.has("price")) {
+        rows = rows.filter(row => {
+            const relative = Number(row.relative_change);
+            return Number.isFinite(relative) && relative > 0;
+        });
+    }
+
+    if (smartFilters.has("sector")) {
+        rows = rows.filter(row => Number(row.sector_change) > 0);
+    }
+
+    if (smartFilterDirection === "bullish") {
+        rows = rows.filter(row =>
+            Number(row.stock_change ?? row.change) > 0
+        );
+    } else if (smartFilterDirection === "bearish") {
+        rows = rows.filter(row =>
+            Number(row.stock_change ?? row.change) < 0
+        );
+    }
+
+    return rows;
+}
+
+
+   
+
+
+
+
+function makeCell(value) {
+    const td = document.createElement("td");
+    td.textContent = value;
+    return td;
+}
+
+
+
+
+function makeStockCell(row) {
+    const td = document.createElement("td");
+    const company = document.createElement("div");
+    const symbol = document.createElement("div");
+
+    const stockSymbol = String(row.symbol || "").trim().toUpperCase();
+    const companyName = getDisplayCompany(row);
+
+    company.className = "company";
+    company.textContent = safeText(companyName);
+    company.title = company.textContent;
+
+    symbol.className = "symbol";
+    symbol.textContent = safeText(stockSymbol);
+
+    td.append(company, symbol);
+    return td;
+}
+
+
+
+
+function makeChangeCell(value) {
+    const td = document.createElement("td");
+    const badge = document.createElement("span");
+    const n = Number(value);
+
+    badge.className = "change " +
+        (n > 0 ? "positive" : n < 0 ? "negative" : "");
+
+badge.textContent = formatPercent(value);
+    td.appendChild(badge);
+    return td;
+}
+
+function makeEmptyRow(message) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+
+    td.colSpan = activeView === "secret_moves" ? 5 : 8;
+    td.className = "empty-state";
+    td.textContent = message;
+    tr.appendChild(td);
+
+    return tr;
+}
+
+function getVisibleRows() {
+    const term = searchTerm.trim().toLowerCase();
+
+    return currentRows().filter((row) => {
+        if (!term) return true;
+
+        
+return String(row.symbol || "").toLowerCase().includes(term)
+    || String(row.company || "").toLowerCase().includes(term)
+    || String(row.sector || "").toLowerCase().includes(term);
+
+    });
+}
+
+
+let trendJumpIndex = {
+    bullish: -1,
+    bearish: -1
+};
+
+function updateTrendNotifier() {
+    const tbody = $("stockRows");
+    if (!tbody) return;
+
+    const table = tbody.closest("table");
+    if (!table || !table.parentElement) return;
+
+    let bar = document.getElementById("trendNotifier");
+
+    if (!bar) {
+        bar = document.createElement("div");
+        bar.id = "trendNotifier";
+        bar.className = "trend-notifier";
+
+        bar.innerHTML = `
+            <button class="trend-bullish-btn" id="trendBullishBtn">
+                🟢 Green: 0 stocks
+            </button>
+            <button class="trend-bearish-btn" id="trendBearishBtn">
+                🔴 Red: 0 stocks
+            </button>
+        `;
+
+        table.parentElement.insertBefore(bar, table);
+
+        $("trendBullishBtn").addEventListener("click", () => {
+            jumpToTrendStock("bullish");
+        });
+
+        $("trendBearishBtn").addEventListener("click", () => {
+            jumpToTrendStock("bearish");
+        });
+    }
+
+    bar.style.display =
+        activeView === "relative_moves" ? "flex" : "none";
+
+    if (activeView !== "relative_moves") return;
+
+    const rows = getVisibleRows();
+
+    const bullishCount = new Set(
+        rows
+            .filter(row => row.price_trend === "bullish")
+            .map(row => row.symbol)
+    ).size;
+
+    const bearishCount = new Set(
+        rows
+            .filter(row => row.price_trend === "bearish")
+            .map(row => row.symbol)
+    ).size;
+
+    $("trendBullishBtn").textContent =
+        `🟢 Green: ${bullishCount} stocks — Next`;
+
+    $("trendBearishBtn").textContent =
+        `🔴 Red: ${bearishCount} stocks — Next`;
+}
+
+function jumpToTrendStock(direction) {
+    const className = direction === "bullish"
+        ? "consistent-bullish"
+        : "consistent-bearish";
+
+    const matchingRows = Array.from(
+        $("stockRows").querySelectorAll(`tr.${className}`)
+    );
+
+    if (matchingRows.length === 0) return;
+
+    document.querySelectorAll("tr.trend-jump-target")
+        .forEach(row => row.classList.remove("trend-jump-target"));
+
+    trendJumpIndex[direction] =
+        (trendJumpIndex[direction] + 1) % matchingRows.length;
+
+    const target = matchingRows[trendJumpIndex[direction]];
+
+    target.classList.add("trend-jump-target");
+
+    target.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+    });
+}
+
+function renderSectorStrip() {
+    const strip = $("sectorStrip");
+    if (!strip) return;
+
+    const groups = {};
+
+    getVisibleRows().forEach(row => {
+        const sector = String(row.sector || "")
+            .replace(/^NIFTY\s+/i, "").trim();
+
+        if (!sector || sector === "Other / Unmapped" ||
+            sector === "Broader Market") return;
+
+        const change = Number(
+            activeView === "secret_moves" ? row.move_percent : row.change
+        );
+        if (!Number.isFinite(change)) return;
+
+        (groups[sector] = groups[sector] || []).push(change);
+    });
+
+    let stats = Object.entries(groups).map(([name, values]) => ({
+        name,
+        count: values.length,
+        avg: values.reduce((a, b) => a + b, 0) / values.length
+    }));
+
+    // Prefer sectors with at least 2 stocks so one stock can't dominate.
+    const solid = stats.filter(s => s.count >= 2);
+    if (solid.length > 0) stats = solid;
+
+    strip.replaceChildren();
+
+    if (stats.length === 0) {
+        strip.style.display = "none";
+        return;
+    }
+
+    const best = stats.reduce((a, b) => (b.avg > a.avg ? b : a));
+    const worst = stats.reduce((a, b) => (b.avg < a.avg ? b : a));
+
+    const addItem = (label, item, cls) => {
+        const span = document.createElement("span");
+        const sign = item.avg > 0 ? "+" : "";
+        span.className = cls;
+        span.textContent =
+            `${label} ${item.name} ${sign}${item.avg.toFixed(2)}% · ` +
+            `${item.count} ${item.count === 1 ? "stock" : "stocks"}`;
+        strip.appendChild(span);
+    };
+
+    if (best.avg > 0) addItem("▲ Top gain:", best, "up");
+    if (worst.avg < 0) addItem("▼ Top loss:", worst, "down");
+
+    strip.style.display = strip.children.length ? "flex" : "none";
+}
+function trendClass(row) {
+    const c = Number(row.consistency);
+    if (!Number.isFinite(c) || c < CONSISTENCY_MIN) return "";
+
+    const move = Number(row.move_percent);
+    if (row.direction === "gainer" && move > 0) return "consistent-bullish";
+    if (row.direction === "loser" && move < 0) return "consistent-bearish";
+    return "";
+}
+function renderTable() {
+    const rows = getVisibleRows();
+    const tbody = $("stockRows");
+
+    if (activeView === "secret_moves") {
+        console.log("SECRET TABLE:", {
+            secretRows: secretRows.length,
+            visibleRows: rows.length,
+            timeframe: secretTimeframe,
+            direction: secretDirection,
+            signals: [...secretSignals],
+            error: secretFetchError
+        });
+    }
+
+    updateTrendNotifier();
+    renderSectorStrip();
+    $("rowCount").textContent =
+        `${rows.length} ${rows.length === 1 ? "stock" : "stocks"}`;
+
+    $("resultSummary").textContent =
+        `Showing ${rows.length} of ${currentRows().length} stocks`;
+
+    // Avoid replacing table nodes if the visible data did not change.
+
+const key = JSON.stringify({
+    view: activeView,
+    search: searchTerm,
+    marketCap: [...marketCapFilters].sort(),
+    smartFilters: [...smartFilters].sort(),
+    smartFilterDirection,
+    rowCount: rows.length,
+    firstRowSymbol: rows[0]?.symbol || "",
+    lastRowSymbol: rows[rows.length - 1]?.symbol || "",
+    secretTimeframe,
+    secretDirection,
+    secretSignals: [...secretSignals].sort(),
+    secretRowsCount: secretRows.length,
+    highlighted: activeView === "secret_moves"
+        ? rows.filter(r => trendClass(r)).length : 0,    
+        allTimeframes,
+            allTimeframes,
+    tfSel: [...allTfSelected].sort().join(","),
+    commonCount: commonSymbols ? commonSymbols.size : -1,
+});
+
+if (key === lastRenderedKey) return;
+lastRenderedKey = key;
+
+
+    const fragment = document.createDocumentFragment();
+
+    if (activeView !== "secret_moves" &&
+    (!latestData || !latestData.last_updated)) {
+        fragment.appendChild(
+            makeEmptyRow(
+                latestData && latestData.last_error
+                    ? "NSE data is temporarily unavailable. Check the connection and try again."
+                    : "Connecting to NSE. Data will appear when the first update succeeds."
+            )
+        );
+    }  else if (activeView === "secret_moves" && allTimeframes && !commonSymbols && allTfSelected.size >= 2) {
+        fragment.appendChild(
+            makeEmptyRow("Comparing all timeframes… this can take a minute.")
+        );
+    } else if (
+        rows.length === 0 && activeView === "secret_moves" && allTimeframes &&
+        allTfSelected.size >= 2 &&
+        !searchTerm && !secretScanning && !secretFetchError
+    ) {
+        fragment.appendChild(
+            makeEmptyRow("No stock is common to all timeframes right now.")
+        );
+    } else if (rows.length === 0) {
+    fragment.appendChild(
+        makeEmptyRow(
+            searchTerm
+                ? "No stocks match your search."
+                : activeView === "secret_moves"
+                    ? (
+                        secretFetchError
+                            ? "Historical data request failed: " + secretFetchError
+                            : secretScanning
+    ? "Scanning historical data… Results will appear automatically."
+    : secretSignals.size > 0
+        ? "No stocks match the selected signal filters."
+        : "No persistent movers found in the available history. Try Week or Month."
+                    )
+                    : activeView === "volume_gainers" && volumeDirection === "bearish"
+                        ? "No bearish stocks were returned by the NSE volume-gainers endpoint."
+                        : activeView === "volume_gainers" && volumeDirection === "bullish"
+                            ? "No bullish stocks were returned by the NSE volume-gainers endpoint."
+                            : "No stocks were returned for this scanner in the latest NSE response."
+        )
+    );
+    } else {
+        rows.forEach((row) => {
+            const tr = document.createElement("tr");
+            if (activeView === "secret_moves") {
+                const cls = trendClass(row);
+                if (cls) {
+                    tr.classList.add(cls);
+                    tr.title = `${row.consistency}% of periods moved ` +
+                        (cls === "consistent-bullish" ? "up" : "down");
+                }
+                tr.appendChild(makeStockCell(row));
+
+                const priceCell = makeCell(
+                    "₹" + formatNumber(row.price)
+                );
+                tr.appendChild(priceCell);
+
+                tr.appendChild(makeCell(
+                    safeText(row.sector)
+                ));
+
+                tr.appendChild(makeChangeCell(row.move_percent));
+
+                tr.appendChild(makeCell(
+                    formatInteger(row.volume)
+                ));
+
+                fragment.appendChild(tr);
+                return;
+            }
+            if (activeView === "relative_moves") {
+             if (row.price_trend === "bullish") {
+        tr.classList.add("consistent-bullish");
+    } else if (row.price_trend === "bearish") {
+        tr.classList.add("consistent-bearish");
+    }
+tr.appendChild(makeStockCell(row));
+
+tr.appendChild(makeCell(
+    row.price === undefined || row.price === null
+        ? "—"
+        : "₹" + formatNumber(row.price)
+));
+
+tr.appendChild(makeCell(safeText(row.sector)));
+tr.appendChild(makeChangeCell(row.stock_change));
+tr.appendChild(makeChangeCell(row.sector_change));
+
+const relativeCell = makeChangeCell(row.relative_change);
+const relativeValue = Number(row.relative_change);
+
+relativeCell.firstChild.textContent =
+    `${relativeValue > 0 ? "+" : ""}${relativeValue.toFixed(2)} pp`;
+
+tr.appendChild(relativeCell);
+tr.appendChild(makeCell(formatInteger(row.volume)));
+tr.appendChild(makeCell(
+    row.average_volume === undefined ||
+    row.average_volume === null
+        ? "—"
+        : formatInteger(row.average_volume)
+));
+
+                
+
+                fragment.appendChild(tr);
+                return;
+            }
+
+            tr.appendChild(makeStockCell(row));
+            tr.appendChild(makeCell(formatNumber(row.price)));
+
+            const changeCell = makeChangeCell(row.change);
+            tr.appendChild(changeCell);
+
+            tr.appendChild(makeCell(formatInteger(row.volume)));
+
+            tr.appendChild(makeCell(
+                row.average_volume === undefined
+                    ? "—"
+                    : formatInteger(row.average_volume)
+            ));
+
+            tr.appendChild(makeCell(
+                row.open === undefined ? "—" : formatNumber(row.open)
+            ));
+            tr.appendChild(makeCell(
+                row.high === undefined ? "—" : formatNumber(row.high)
+            ));
+            tr.appendChild(makeCell(
+                row.low === undefined ? "—" : formatNumber(row.low)
+            ));
+
+            fragment.appendChild(tr);
+        });
+    }
+
+    tbody.replaceChildren(fragment);
+}
+
+function renderStats() {
+    const rows = currentRows();
+
+    const positive = rows.filter(row =>
+        Number(activeView === "secret_moves"
+            ? row.move_percent : row.change) > 0
+    ).length;
+
+    const negative = rows.filter(row =>
+        Number(activeView === "secret_moves"
+            ? row.move_percent : row.change) < 0
+    ).length;
+
+    $("statCount").textContent = formatInteger(rows.length);
+    $("statPositive").textContent = formatInteger(positive);
+    $("statNegative").textContent = formatInteger(negative);
+
+    $("statUpdated").textContent = activeView === "secret_moves"
+    ? (secretLastFetch
+        ? formatUpdated(new Date(secretLastFetch).toISOString())
+        : "Waiting…")
+    : formatUpdated(latestData && latestData.last_updated);
+
+    $("statTradeDate").textContent = activeView === "secret_moves"
+        ? `History: ${secretTimeframe.toUpperCase()}`
+        : formatTradeDate(latestData && latestData.trade_date);
+}
+
+function renderStatus() {
+    if (!latestData) return;
+
+    const status = safeText(latestData.market_status);
+    const error = latestData.last_error;
+
+    $("marketStatus").textContent = error
+        ? "NSE connection issue"
+        : status;
+
+    $("marketDot").className = "dot " +
+        (error ? "error" : latestData.last_updated ? "" : "waiting");
+
+    $("sourceDot").className = "dot " +
+        (error ? "error" : latestData.last_updated ? "" : "waiting");
+
+    $("nextUpdate").textContent = error
+        ? "Last data retained; retrying automatically"
+        : `Background refresh every ${latestData.refresh_seconds || 20}s`;
+
+    if (error) {
+        $("marketStatus").title = error;
+        $("sourceDot").title = error;
+    } else {
+        $("marketStatus").title = "";
+        $("sourceDot").title = "";
+    }
+}
+
+function renderPageHeading() {
+    const config = VIEW_CONFIG[activeView];
+
+    if (!config) {
+        console.error("Missing view configuration:", activeView);
+        return;
+    }
+
+        const headers = activeView === "secret_moves"
+        ? ["Stock", "Price", "Sector", "Move %", "Volume"]
+        : activeView === "relative_moves"
+            ? [
+                "Stock",
+                "Last Price",
+                "Sector Index",
+                "Stock Change",
+                "Sector Change",
+                "Relative Move",
+                "Volume",
+                "1W Avg. Volume"
+            ]
+            : [
+                "Stock",
+                "Last Price",
+                "Change %",
+                "Volume",
+                "1W Avg. Volume",
+                "Open",
+                "High",
+                "Low"
+            ];
+
+    const headerRow = $("stockHeaders");
+    headerRow.replaceChildren();
+
+    headers.forEach((label) => {
+        const th = document.createElement("th");
+        th.textContent = label;
+        headerRow.appendChild(th);
+    });
+
+$("pageTitle").textContent = "Spot the unusual.";
+    $("pageSubtitle").textContent = config.subtitle;
+    $("tableTitle").textContent = config.title;
+    $("tableDescription").textContent = config.description;
+
+    document.querySelectorAll(".nav-button").forEach((button) => {
+        button.classList.toggle(
+            "active",
+            button.dataset.view === activeView
+        );
+    });
+
+    $("volumeFilters").style.display =
+        activeView === "volume_gainers" ? "flex" : "none";
+        const isSecret = activeView === "secret_moves";
+
+$("secretToolbar").style.display = isSecret ? "flex" : "none";
+$("marketCapToolbar").style.display = "flex";
+
+document.querySelector(".smart-filter-wrap").style.display =
+    isSecret ? "none" : "block";
+
+$("searchInput").placeholder = isSecret
+    ? "Search stock, symbol or sector…"
+    : "Search symbol or company…";
+}
+
+function renderSectorList(containerId, sectors, direction) {
+    const container = $(containerId);
+    container.replaceChildren();
+
+    if (!Array.isArray(sectors) || sectors.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "sector-empty";
+        empty.textContent = "No sector data available";
+        container.appendChild(empty);
+        return;
+    }
+
+    sectors.slice(0, 4).forEach((sector) => {
+        const item = document.createElement("div");
+        item.className = "sector-item";
+
+        const name = document.createElement("span");
+        name.textContent = sector.name;
+
+        const change = document.createElement("span");
+        change.className = direction;
+        change.textContent = formatPercent(sector.change);
+
+        item.append(name, change);
+        container.appendChild(item);
+    });
+}
+
+function renderSectorNotifier() {
+    if (!latestData) return;
+
+    renderSectorList(
+        "bullishSectorList",
+        latestData.top_3_bullish_sectors,
+        "bullish"
+    );
+
+    renderSectorList(
+        "bearishSectorList",
+        latestData.top_3_bearish_sectors,
+        "bearish"
+    );
+}
+
+function renderAll() {
+    renderPageHeading();
+    renderStats();
+    renderStatus();
+    renderTable();
+    renderSectorNotifier();
+}
+
+
+
+async function fetchMarketData() {
+    try {
+        const response = await fetch("/api/market", {
+            cache: "no-store"
+        });
+
+        if (!response.ok) {
+            throw new Error(`Server returned HTTP ${response.status}`);
+        }
+
+        const payload = await response.json();
+        latestData = payload;
+
+        // Force table refresh only when the underlying response changes.
+        renderAll();
+        if (activeView === "secret_moves") {
+            fetchSecretMoves(false);
+        }
+    } catch (error) {
+        $("marketStatus").textContent = "Server unavailable";
+        $("marketDot").className = "dot error";
+        $("sourceDot").className = "dot error";
+        $("nextUpdate").textContent = "Could not contact the local server";
+        console.error("Dashboard polling error:", error);
+    }
+}
+
+
+
+
+
+async function fetchSecretMoves(force = false) {
+    if (activeView !== "secret_moves") {
+    console.log("[SECRET MOVES] Skipped: view is", activeView);
+    return;
+}
+
+console.log("[SECRET MOVES] Requesting backend data...");
+
+    // Avoid duplicate requests, but allow forced filter changes.
+    if (secretFetchInProgress && !force) return;
+
+    if (
+        !force &&
+        Date.now() - secretLastFetch < SECRET_FETCH_INTERVAL
+    ) {
+        return;
+    }
+
+    if (secretRequestController) {
+        secretRequestController.abort();
+    }
+
+    clearTimeout(secretPollTimer);
+
+    const controller = new AbortController();
+    secretRequestController = controller;
+
+    const requestId = ++secretRequestId;
+    const timeframe = secretTimeframe;
+    const direction = secretDirection;
+
+    secretFetchInProgress = true;
+    secretScanning = true;
+    secretFetchError = "";
+    renderAll();
+
+    try {
+        const url = new URL(
+            "/api/secret-moves",
+            window.location.origin
+        );
+
+        url.searchParams.set("timeframe", timeframe);
+        url.searchParams.set("direction", direction);
+
+        const response = await fetch(url.toString(), {
+            method: "GET",
+            cache: "no-store",
+            signal: controller.signal
+        });
+
+        if (!response.ok) {
+            throw new Error(`Backend returned HTTP ${response.status}`);
+        }
+
+        const payload = await response.json();
+
+        // Ignore responses belonging to older requests or filters.
+        if (
+            requestId !== secretRequestId ||
+            timeframe !== secretTimeframe ||
+            direction !== secretDirection
+        ) {
+            return;
+        }
+
+        if (!Array.isArray(payload.results)) {
+            throw new Error(
+                payload.error || "Backend response has no results array."
+            );
+        }
+
+        // Display the data returned by Flask.
+        secretRows = payload.results.filter(row => !isEtfRow(row));
+        secretScanning = payload.scanning === true;
+        secretFetchError = "";
+        secretLastFetch = Date.now();
+
+        lastRenderedKey = "";
+        renderAll();
+
+        // If the backend is still scanning, fetch again in 3 seconds.
+        if (secretScanning) {
+            secretPollTimer = setTimeout(() => {
+                fetchSecretMoves(true);
+            }, 3000);
+        }
+
+    } catch (error) {
+        if (error.name === "AbortError") return;
+        if (requestId !== secretRequestId) return;
+
+secretFetchError = "Unable to load historical data right now. We'll automatically retry in a moment.";
+        secretScanning = false;
+
+        lastRenderedKey = "";
+        renderAll();
+
+        console.error("Secret Moves fetch failed:", error);
+
+    } finally {
+        if (requestId === secretRequestId) {
+            secretFetchInProgress = false;
+            secretRequestController = null;
+        }
+    }
+}
+
+
+
+
+    
+
+async function requestRefresh() {
+    if (refreshInProgress) return;
+
+    refreshInProgress = true;
+    const button = $("refreshButton");
+    button.disabled = true;
+    button.textContent = "↻ Refreshing…";
+
+    try {
+        const response = await fetch("/api/refresh", {
+            method: "POST"
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        showToast("Refresh requested. Waiting for NSE data…");
+
+        // The refresh runs on the backend. Poll for its result.
+        setTimeout(fetchMarketData, 1200);
+        setTimeout(fetchMarketData, 3500);
+
+    } catch (error) {
+        showToast("Unable to request refresh. Check that Flask is running.");
+        console.error("Refresh request failed:", error);
+    } finally {
+        setTimeout(() => {
+            refreshInProgress = false;
+            button.disabled = false;
+            button.textContent = "↻ Refresh";
+        }, 2000);
+    }
+}
+
+
+
+
+document.querySelectorAll(".cap-btn").forEach(button => {
+    button.addEventListener("click", () => {
+        const selectedCap = button.dataset.cap;
+
+        // Toggle only the clicked category.
+        if (marketCapFilters.has(selectedCap)) {
+            marketCapFilters.delete(selectedCap);
+        } else {
+            marketCapFilters.add(selectedCap);
+        }
+
+        // Update the button appearance for every category.
+        document.querySelectorAll(".cap-btn").forEach(item => {
+            const active = marketCapFilters.has(item.dataset.cap);
+
+            item.classList.toggle("active", active);
+            item.setAttribute("aria-pressed", String(active));
+        });
+
+        // Refresh the displayed rows.
+        lastRenderedKey = "";
+        renderAll();
+    });
+});
+
+
+
+
+document.querySelectorAll(".nav-button").forEach((button) => {
+    button.addEventListener("click", () => {
+        activeView = button.dataset.view;
+        lastRenderedKey = "";
+        renderAll();
+
+        if (activeView === "secret_moves") {
+            fetchSecretMoves(false);
+        }
+    });
+});
+document.querySelectorAll("[data-secret-timeframe]").forEach(button => {
+    button.addEventListener("click", () => {
+        secretTimeframe = button.dataset.secretTimeframe;
+
+        document.querySelectorAll("[data-secret-timeframe]").forEach(item => {
+            item.classList.toggle("active", item === button);
+        });
+
+        lastRenderedKey = "";
+        renderAll();
+        fetchSecretMoves(true);
+    });
+});
+
+document.querySelectorAll("[data-secret-direction]").forEach(button => {
+    button.addEventListener("click", () => {
+        secretDirection = button.dataset.secretDirection;
+
+        document.querySelectorAll("[data-secret-direction]").forEach(item => {
+            item.classList.toggle("active", item === button);
+        });
+
+        lastRenderedKey = "";
+        renderAll();
+        fetchSecretMoves(true);
+    });
+});
+
+
+document.querySelectorAll("[data-secret-signal]").forEach(checkbox => {
+    checkbox.addEventListener("change", () => {
+        const signal = checkbox.dataset.secretSignal;
+
+        if (checkbox.checked) {
+            secretSignals.add(signal);
+        } else {
+            secretSignals.delete(signal);
+        }
+
+        // Signal filters must be able to inspect gainers and losers.
+        if (secretSignals.size > 0) {
+            secretDirection = "both";
+        }
+
+        document.querySelectorAll("[data-secret-direction]").forEach(button => {
+            button.classList.toggle(
+                "active",
+                button.dataset.secretDirection === secretDirection
+            );
+        });
+
+        lastRenderedKey = "";
+        renderAll();
+
+        // Reload the data using the selected direction.
+        fetchSecretMoves(true);
+    });
+});
+
+document.querySelectorAll("#volumeFilters .filter-button").forEach((button) => {
+    button.addEventListener("click", () => {
+        volumeDirection = button.dataset.direction;
+
+        document.querySelectorAll("#volumeFilters .filter-button").forEach((item) => {
+            item.classList.toggle("active", item === button);
+        });
+
+        lastRenderedKey = "";
+        renderAll();
+    });
+});
+$("smartFilterToggle").addEventListener("click", () => {
+    const panel = $("smartFilterPanel");
+    const isHidden = panel.style.display === "none";
+
+    panel.style.display = isHidden ? "block" : "none";
+
+    $("smartFilterToggle").setAttribute(
+        "aria-expanded",
+        String(isHidden)
+    );
+});
+
+document.addEventListener("click", (event) => {
+    const filterWrap = document.querySelector(".smart-filter-wrap");
+    const filterPanel = $("smartFilterPanel");
+    const filterToggle = $("smartFilterToggle");
+
+    if (!filterWrap.contains(event.target)) {
+        filterPanel.style.display = "none";
+        filterToggle.setAttribute("aria-expanded", "false");
+    }
+});
+
+document.querySelectorAll(".smart-filter-check").forEach((checkbox) => {
+    checkbox.addEventListener("change", () => {
+        if (checkbox.checked) {
+            smartFilters.add(checkbox.value);
+        } else {
+            smartFilters.delete(checkbox.value);
+        }
+
+        $("smartFilterCount").textContent =
+            `${smartFilters.size + (smartFilterDirection ? 1 : 0)} selected`;
+
+        lastRenderedKey = "";
+        renderAll();
+    });
+});
+
+document.querySelectorAll("[data-smart-direction]").forEach((button) => {
+    button.addEventListener("click", () => {
+        const direction = button.dataset.smartDirection;
+
+        smartFilterDirection =
+            smartFilterDirection === direction ? "" : direction;
+
+        document.querySelectorAll("[data-smart-direction]").forEach((item) => {
+            item.classList.toggle(
+                "active",
+                item.dataset.smartDirection === smartFilterDirection
+            );
+        });
+
+        $("smartFilterCount").textContent =
+            `${smartFilters.size + (smartFilterDirection ? 1 : 0)} selected`;
+
+        lastRenderedKey = "";
+        renderAll();
+    });
+});
+
+$("smartFilterClear").addEventListener("click", () => {
+    smartFilters.clear();
+    smartFilterDirection = "";
+
+    document.querySelectorAll(".smart-filter-check").forEach((checkbox) => {
+        checkbox.checked = false;
+    });
+
+    document.querySelectorAll("[data-smart-direction]").forEach((button) => {
+        button.classList.remove("active");
+    });
+
+    $("smartFilterCount").textContent = "0 selected";
+
+    lastRenderedKey = "";
+    renderAll();
+});
+const tfMapCache = {};   // timeframe -> { time, map }
+
+async function loadTfMap(tf) {
+    const cached = tfMapCache[tf];
+    if (cached && Date.now() - cached.time < 15000) return cached.map;
+
+    const url = new URL("/api/secret-moves", window.location.origin);
+    url.searchParams.set("timeframe", tf);
+    url.searchParams.set("direction", "both");
+
+    const response = await fetch(url.toString(), { cache: "no-store" });
+    if (!response.ok) throw new Error(`${tf}: HTTP ${response.status}`);
+
+    const payload = await response.json();
+    const map = new Map();
+    (payload.results || []).forEach(row => {
+        map.set(String(row.symbol || "").toUpperCase(), row.direction);
+    });
+
+    tfMapCache[tf] = { time: Date.now(), map };
+    return map;
+}
+
+function updateAllTfUI() {
+    const btn = $("allTfBtn");
+    btn.classList.toggle("active", allTimeframes);
+    btn.setAttribute("aria-pressed", String(allTimeframes));
+    btn.textContent = allTimeframes
+        ? `⊞ All Timeframes · ${allTfSelected.size}`
+        : "⊞ All Timeframes";
+
+    const note = $("allTfNote");
+    if (!note) return;
+
+    if (allTfSelected.size < 2) {
+        note.textContent = "Select at least 2 timeframes.";
+    } else if (commonSymbols) {
+        note.textContent =
+            `${commonSymbols.size} common ${commonSymbols.size === 1 ? "stock" : "stocks"}`;
+    } else {
+        note.textContent = "Comparing…";
+    }
+}
+
+async function fetchCommonTimeframes() {
+    if (!allTimeframes) return;
+
+    const selected = ALL_TF_LIST.filter(tf => allTfSelected.has(tf));
+
+    // One timeframe (or none) has nothing to compare: show the normal list.
+    if (selected.length < 2) {
+        commonSymbols = null;
+        updateAllTfUI();
+        lastRenderedKey = "";
+        renderAll();
+        return;
+    }
+
+    const myId = ++allTfRequestId;
+
+    try {
+        const maps = await Promise.all(selected.map(loadTfMap));
+
+        // Ignore if the toggle was switched off or a newer request started.
+        if (!allTimeframes || myId !== allTfRequestId) return;
+
+        const common = new Set();
+
+        maps[0].forEach((direction, symbol) => {
+            const inAll = maps.every(map =>
+                map.has(symbol) &&
+                (!ALL_TF_SAME_DIRECTION || map.get(symbol) === direction)
+            );
+            if (inAll) common.add(symbol);
+        });
+
+        commonSymbols = common;
+
+    } catch (error) {
+        console.error("Timeframe comparison failed:", error);
+        if (allTimeframes && myId === allTfRequestId) {
+            showToast("Could not compare timeframes. Retrying shortly.");
+        }
+    } finally {
+        if (myId === allTfRequestId) {
+            updateAllTfUI();
+            lastRenderedKey = "";
+            renderAll();
+        }
+    }
+}
+
+function turnOffAllTf() {
+    allTimeframes = false;
+    commonSymbols = null;
+    allTfRequestId++;                       // cancel anything in flight
+    $("allTfPanel").style.display = "none";
+    updateAllTfUI();
+    lastRenderedKey = "";
+    renderAll();
+}
+
+$("allTfBtn").addEventListener("click", () => {
+    const panel = $("allTfPanel");
+
+    if (!allTimeframes) {
+        // Off -> on, and open the box
+        allTimeframes = true;
+        commonSymbols = null;
+        panel.style.display = "block";
+        updateAllTfUI();
+        lastRenderedKey = "";
+        renderAll();
+        fetchCommonTimeframes();
+    } else if (panel.style.display === "none") {
+        // On, box was closed -> just reopen it
+        panel.style.display = "block";
+    } else {
+        // On, box is open -> back to normal
+        turnOffAllTf();
+    }
+});
+
+$("allTfOff").addEventListener("click", turnOffAllTf);
+
+document.querySelectorAll(".alltf-check").forEach(box => {
+    box.addEventListener("change", () => {
+        if (box.checked) allTfSelected.add(box.value);
+        else allTfSelected.delete(box.value);
+
+        commonSymbols = null;
+        updateAllTfUI();
+        lastRenderedKey = "";
+        renderAll();
+        fetchCommonTimeframes();
+    });
+});
+
+// Clicking anywhere else closes the box (the filter stays on).
+document.addEventListener("click", (event) => {
+    const wrap = document.querySelector(".alltf-wrap");
+    if (wrap && !wrap.contains(event.target)) {
+        $("allTfPanel").style.display = "none";
+    }
+});
+$("searchInput").addEventListener("input", (event) => {
+    searchTerm = event.target.value;
+    renderTable();
+});
+
+$("refreshButton").addEventListener("click", requestRefresh);
+
+// Load market data immediately.
+fetchMarketData();
+
+// Refresh only the active scanner.
+setInterval(() => {
+    if (activeView === "secret_moves") {
+        fetchSecretMoves(false);
+        if (allTimeframes) fetchCommonTimeframes();
+    } else {
+        fetchMarketData();
+    }
+}, 20000);
+// Native macOS-style Keyboard Shortcuts
+document.addEventListener("keydown", (event) => {
+    // Press '/' to focus the search bar (unless already typing in an input)
+    if (event.key === "/" && document.activeElement.tagName !== "INPUT" && document.activeElement.tagName !== "TEXTAREA") {
+        event.preventDefault();
+        const searchInput = $("searchInput");
+        if (searchInput) {
+            searchInput.focus();
+            searchInput.select();
+        }
+    }
+
+    // Press 'Escape' to clear/blur search or close active filter panels
+    if (event.key === "Escape") {
+        const searchInput = $("searchInput");
+        if (document.activeElement === searchInput) {
+            searchInput.value = "";
+            searchTerm = "";
+            renderTable();
+            searchInput.blur();
+        }
+        const filterPanel = $("smartFilterPanel");
+        if (filterPanel) {
+            filterPanel.style.display = "none";
+            $("smartFilterToggle").setAttribute("aria-expanded", "false");
+        }
+    }
+});
+let currentTheme = localStorage.getItem("nse_theme_pref") || "dark";
+
+function applyTheme(theme) {
+    currentTheme = theme;
+    localStorage.setItem("nse_theme_pref", theme);
+    document.documentElement.setAttribute("data-theme", theme);
+}
+
+const themeBtn = $("themeToggleBtn");
+if (themeBtn) {
+    themeBtn.addEventListener("click", () => {
+        const nextTheme = currentTheme === "dark" ? "light" : "dark";
+        applyTheme(nextTheme);
+    });
+}
+
+applyTheme(currentTheme);
+</script>
+</body>
+</html>
